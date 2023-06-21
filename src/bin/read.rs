@@ -14,7 +14,9 @@ fn parse_args() -> Result<Args, pico_args::Error> {
     let mut args = pico_args::Arguments::from_env();
     Ok(Args {
         day: args.free_from_str()?,
-        year: args.opt_value_from_str(["-y", "--year"])?,
+        // Just overriding this since I don't want to have to specify '--year' all the time
+        // yes, there's probably a better way to do this
+        year: Some(2020),
     })
 }
 
