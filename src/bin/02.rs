@@ -1,68 +1,91 @@
-// lol, this is some of the worst code I've written in a long time
+use std::str::FromStr;
+
+use nom::{
+    character::complete::{alpha1, char, digit1},
+    combinator::map_res,
+    sequence::{preceded, separated_pair},
+    IResult,
+};
+
+#[derive(Debug)]
+struct PasswordValidation {
+    min: usize,
+    max: usize,
+    letter: char,
+    input: String,
+}
+fn parse_numbers(input: &str) -> IResult<&str, usize> {
+    map_res(digit1, usize::from_str)(input)
+}
+impl PasswordValidation {
+    // 1-3 a: abcde
+    fn parse(input: &str) -> IResult<&str, Self> {
+        let (input, (min, max)) =
+            separated_pair(parse_numbers, char('-'), parse_numbers)(input.trim())?;
+        let (input, (letter, target)) =
+            separated_pair(alpha1, char(':'), preceded(char(' '), alpha1))(input.trim())?;
+        Ok((
+            input,
+            Self {
+                min: min,
+                max: max,
+                letter: letter.chars().next().unwrap(),
+                input: target.trim().to_string(),
+            },
+        ))
+    }
+
+    fn is_valid_for_part_1(self) -> bool {
+        let count = &self.input.chars().filter(|c| *c == self.letter).count();
+        let result = (self.min..=self.max).contains(count);
+        // dbg!(&self, count, result);
+        result
+    }
+
+    fn is_valid_for_part_2(self) -> bool {
+        let c = self.input.as_bytes();
+        let target = self.letter;
+        match (
+            c[self.min - 1] as char == target,
+            c[self.max - 1] as char == target,
+        ) {
+            (true, false) | (false, true) => true,
+            _ => false,
+        }
+    }
+}
+
 pub fn part_one(input: &str) -> Option<u32> {
-    let valid: u32 = input
-        .lines()
-        .map(|line| {
-            if let Some((rule, input)) = line.split_once(":") {
-                if let Some((count, target)) = rule.split_once(" ") {
-                    if let Some((min, max)) = count.split_once("-").map(|(a, b)| {
-                        (
-                            str::parse::<usize>(a).unwrap(),
-                            str::parse::<usize>(b).unwrap(),
-                        )
-                    }) {
-                        let count = input.chars().filter(|c| c.to_string() == target).count();
-                        if count >= min && count <= max {
-                            1
-                        } else {
-                            0
-                        }
-                    } else {
-                        0
-                    }
-                } else {
-                    0
-                }
-            } else {
-                0
-            }
-        })
-        .sum();
-    Some(valid)
+    Some(
+        input
+            .lines()
+            .map(|line| {
+                PasswordValidation::parse(line)
+                    .unwrap()
+                    .1
+                    .is_valid_for_part_1()
+            })
+            .filter(|v| *v == true)
+            .count() as u32,
+    )
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    let valid: u32 = input
-        .lines()
-        .map(|line| {
-            if let Some((rule, input)) = line.split_once(":") {
-                if let Some((count, target)) = rule.split_once(" ") {
-                    if let Some((pos_1, pos_2)) = count.split_once("-").map(|(a, b)| {
-                        (
-                            str::parse::<usize>(a).unwrap() - 1,
-                            str::parse::<usize>(b).unwrap() - 1,
-                        )
-                    }) {
-                        let c = input.trim().as_bytes();
-                        let target = target.trim().as_bytes()[0] as char;
-                        let valid = match (c[pos_1] as char == target, c[pos_2] as char == target) {
-                            (true, false) | (false, true) => 1,
-                            _ => 0,
-                        };
-                        // dbg!(valid);
-                        valid
-                    } else {
-                        0
-                    }
-                } else {
-                    0
+    Some(
+        input
+            .lines()
+            .map(|line| {
+                match PasswordValidation::parse(line)
+                    .unwrap()
+                    .1
+                    .is_valid_for_part_2()
+                {
+                    true => 1,
+                    false => 0,
                 }
-            } else {
-                0
-            }
-        })
-        .sum();
-    Some(valid)
+            })
+            .sum(),
+    )
 }
 
 fn main() {
