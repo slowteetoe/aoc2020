@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 pub fn part_one(input: &str) -> Option<u32> {
     Some(
         input
@@ -42,6 +44,47 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
+    let mut seats : Vec<u32> = input.lines().map(|s| {
+        let (fb, lr) = s
+            .chars()
+            .into_iter()
+            .fold((vec![], vec![]), |mut acc, c| match c {
+                'F' | 'B' => {
+                    acc.0.push(c);
+                    acc
+                }
+                'L' | 'R' => {
+                    acc.1.push(c);
+                    acc
+                }
+                _ => unreachable!(),
+            });
+        let row = fb.iter().fold(0..=127, |acc, c| {
+            let mid = (acc.start() + acc.end()) / 2;
+            match c {
+                'F' => *acc.start()..=mid,
+                'B' => mid + 1..=*acc.end(),
+                _ => unreachable!(),
+            }
+        });
+
+        let col = lr.iter().fold(0..=7, |acc, c| {
+            let mid = (acc.start() + acc.end()) / 2;
+            match c {
+                'L' => *acc.start()..=mid,
+                'R' => mid + 1..=*acc.end(),
+                _ => unreachable!(),
+            }
+        });
+        (*row.start() * 8) + col.start()
+    }).collect();
+    seats.sort();
+    for (a, b) in seats.iter().tuple_windows() {
+        if b.abs_diff(*a) == 2 {    // need a space between a and b so 2 not 1!
+            dbg!(&a,&b);
+            return Some(a+1)
+        }
+    }
     None
 }
 
