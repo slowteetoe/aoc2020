@@ -3,13 +3,20 @@ pub fn part_one(input: &str) -> Option<u32> {
         input
             .lines()
             .map(|s| {
-                let fb: Vec<char> = s
+                let (fb, lr) = s
                     .chars()
-                    .take_while(|c| c == &'F' || c == &'B')
-                    .by_ref()
-                    .collect();
-                let lr: Vec<char> = s.chars().skip_while(|c| c != &'L' && c != &'R').collect();
-
+                    .into_iter()
+                    .fold((vec![], vec![]), |mut acc, c| match c {
+                        'F' | 'B' => {
+                            acc.0.push(c);
+                            acc
+                        }
+                        'L' | 'R' => {
+                            acc.1.push(c);
+                            acc
+                        }
+                        _ => unreachable!(),
+                    });
                 let row = fb.iter().fold(0..=127, |acc, c| {
                     let mid = (acc.start() + acc.end()) / 2;
                     match c {
