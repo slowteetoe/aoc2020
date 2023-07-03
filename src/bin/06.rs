@@ -1,9 +1,7 @@
-use std::collections::HashSet;
-
-use itertools::Itertools;
+use std::collections::{HashSet, HashMap};
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let groups: Vec<&str> = input.split_terminator("\n\n").collect();
+    let groups: Vec<&str> = input.trim().split_terminator("\n\n").collect();
     let mut total = 0u32; 
     for group in groups {
         let people = group.split("\n");
@@ -19,7 +17,25 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let groups: Vec<&str> = input.trim().split_terminator("\n\n").collect();
+    let mut total = 0u32; 
+    for group in groups {
+        let people = group.split("\n");
+        let mut votes = HashMap::<char, u32>::new();
+        let mut num_peeps = 0;
+        for person in people {
+            num_peeps += 1;
+            for v in person.chars(){
+                *votes.entry(v).or_insert(0) += 1;
+            }
+        }
+        for (_,v) in votes {
+            if v == num_peeps { 
+                total += 1;
+            }
+        }
+    }
+    Some(total)
 }
 
 fn main() {
@@ -41,6 +57,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 6);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(6));
     }
 }
