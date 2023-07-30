@@ -1,44 +1,51 @@
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
+
+use itertools::Itertools;
 
 pub fn part_one(input: &str) -> Option<u32> {
+    // hack, so that I don't have to change the macro for AoC
     let newlines = input.chars().filter(|c| *c=='\n').count();
     let preamble_len = if newlines < 20 { 5 } else { 25 };
 
-    // spiffy, but I didn't read the instructions closely enough.
-    let (preamble, values) = input
+    let values = input
         .lines()
-        .map(|val| str::parse::<u16>(val).unwrap())
-        .enumerate()
-        .fold((BTreeSet::new(), vec![]), |(mut preamble, mut values), (idx, val)|  {
-            if idx < preamble_len {
-                preamble.insert(val); {}
-            } else {
-                values.push(val)
-            };
-            (preamble, values)
-        });
+        .map(|val| str::parse::<u64>(val).unwrap()).collect_vec();
 
-    // naive approach with horrible control logic lol
-    let mut sorted = Vec::from_iter(preamble.clone());
-    sorted.sort();
+    // if we have dups in the preamble_len previous values, this won't work and we'll have to do a map w/ count
+    // really, we want some sort of circular queue
 
-    
-    for target in values.iter() {
-        let mut found = None;
-        for a in preamble.iter() {
-            let complement : i32 = *target as i32 - *a as i32;
-            dbg!(&target, &a, &complement, &preamble);
-            if complement > 0 && preamble.contains(&(complement as u16)) {
-                dbg!(&a, &complement, &target);
-                found = Some(target);
-                break
+    for (idx,target) in values.iter().enumerate().skip(preamble_len){
+        // set up our lookback as a hash to make faster(?)
+        let mut lookback: BTreeMap<&u64, u8> = BTreeMap::new();
+        for i in idx-preamble_len..=idx {
+            lookback.entry(&values[i]).and_modify(|v| {*v+=1} ).or_insert(1);
+        }
+        let val = values[idx];
+        let mut found = false;
+        for i in idx-preamble_len..=idx {
+            if values[i] > val {
+                // impossible to match as we only have positive numbers
+                continue;
+            }
+            let target = val - values[i];
+            if lookback.contains_key(&target) {
+                // double check that we don't search for 24 and find 12 once, but count it as 2x
+                // if target == values[i] && lookback[&target] != 2 {
+                //     dbg!(target, lookback, values[i]);
+                //     panic!("dups?");
+                //     // continue;
+                // }
+                found = true;
+                break;
             }
         }
-        if found.is_none() {
-            dbg!(&found);
-            return Some(*target as u32);
+        if found {
+            continue;
         }
-    };
+
+        return Some(*target as u32);
+    }
+    
     None
 }
 
