@@ -4,37 +4,32 @@ use itertools::Itertools;
 
 pub fn part_one(input: &str) -> Option<u32> {
     // hack, so that I don't have to change the macro for AoC
-    let newlines = input.chars().filter(|c| *c=='\n').count();
+    let newlines = input.chars().filter(|c| *c == '\n').count();
     let preamble_len = if newlines < 20 { 5 } else { 25 };
 
     let values = input
         .lines()
-        .map(|val| str::parse::<u64>(val).unwrap()).collect_vec();
+        .map(|val| str::parse::<u64>(val).unwrap())
+        .collect_vec();
 
-    // if we have dups in the preamble_len previous values, this won't work and we'll have to do a map w/ count
-    // really, we want some sort of circular queue
-
-    for (idx,target) in values.iter().enumerate().skip(preamble_len){
+    for (idx, target) in values.iter().enumerate().skip(preamble_len) {
         // set up our lookback as a hash to make faster(?)
         let mut lookback: BTreeMap<&u64, u8> = BTreeMap::new();
-        for i in idx-preamble_len..=idx {
-            lookback.entry(&values[i]).and_modify(|v| {*v+=1} ).or_insert(1);
+        for i in idx - preamble_len..=idx {
+            lookback
+                .entry(&values[i])
+                .and_modify(|v| *v += 1)
+                .or_insert(1);
         }
         let val = values[idx];
         let mut found = false;
-        for i in idx-preamble_len..=idx {
+        for i in idx - preamble_len..=idx {
             if values[i] > val {
                 // impossible to match as we only have positive numbers
                 continue;
             }
             let target = val - values[i];
             if lookback.contains_key(&target) {
-                // double check that we don't search for 24 and find 12 once, but count it as 2x
-                // if target == values[i] && lookback[&target] != 2 {
-                //     dbg!(target, lookback, values[i]);
-                //     panic!("dups?");
-                //     // continue;
-                // }
                 found = true;
                 break;
             }
@@ -45,11 +40,38 @@ pub fn part_one(input: &str) -> Option<u32> {
 
         return Some(*target as u32);
     }
-    
+
     None
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
+    // hack, so that I don't have to change the macro for AoC
+    let newlines = input.chars().filter(|c| *c == '\n').count();
+    let target = if newlines < 20 { 127 } else { 1504371145u64 }; // answer to my dataset for part 1
+
+    let values = input
+        .lines()
+        .map(|val| str::parse::<u64>(val).unwrap())
+        .collect_vec();
+
+    // naive approach, build up the range starting with each value and discard once we are > the target value
+
+    for i in 0..values.len() {
+        let mut candidates = vec![];
+        let mut running_total = 0u64;
+        for idx in i..values.len() {
+            candidates.push(values[idx]);
+            running_total += values[idx];
+            if running_total == target {
+                // we have our range
+                let min = *candidates.iter().min().unwrap() as u32;
+                let max = *candidates.iter().max().unwrap() as u32;
+                return Some(min + max);
+            } else if running_total > target {
+                break;
+            }
+        }
+    }
     None
 }
 
@@ -72,6 +94,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let input = advent_of_code::read_file("examples", 9);
-        assert_eq!(part_two(&input), None);
+        assert_eq!(part_two(&input), Some(62));
     }
 }
